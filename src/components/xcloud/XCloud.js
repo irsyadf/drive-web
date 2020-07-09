@@ -427,9 +427,9 @@ class XCloud extends React.Component {
           let currentCommanderItems = this.state.currentCommanderItems.filter((commanderItem) =>
             item.isFolder
               ? !commanderItem.isFolder ||
-                (commanderItem.isFolder && !(commanderItem.id === item.id))
+              (commanderItem.isFolder && !(commanderItem.id === item.id))
               : commanderItem.isFolder ||
-                (!commanderItem.isFolder && !(commanderItem.fileId === item.fileId)),
+              (!commanderItem.isFolder && !(commanderItem.fileId === item.fileId)),
           );
           // update state for updating commander items list
           this.setState({ currentCommanderItems });
@@ -446,7 +446,24 @@ class XCloud extends React.Component {
     });
   };
 
-  downloadFile = (id) => {
+  downloadFile = async (bucketId, fileId, filename) => {
+    const { Environment } = window.inxt
+    const userInfo = await localStorage
+    const xUser = JSON.parse(userInfo.xUser)
+    console.log(xUser)
+    const inxt = new Environment({
+      bridgeUrl: 'https://api.internxt.com',
+      bridgeUser: xUser.email,
+      bridgePass: xUser.userId,
+      encryptionKey: userInfo.xMnemonic
+    })
+
+    inxt.resolveFile(bucketId, fileId).then(file => {
+      fileDownload(file.data, filename)
+    })
+
+  }
+  downloadFile2 = (id) => {
     return new Promise((resolve) => {
       fetch(`/api/storage/file/${id}`, {
         method: 'GET',
@@ -480,13 +497,13 @@ class XCloud extends React.Component {
             err.json().then((res) => {
               toast.warn(
                 'Error downloading file:\n' +
-                  err.status +
-                  ' - ' +
-                  err.statusText +
-                  '\n' +
-                  res.message +
-                  '\nFile id: ' +
-                  id,
+                err.status +
+                ' - ' +
+                err.statusText +
+                '\n' +
+                res.message +
+                '\nFile id: ' +
+                id,
               );
             });
           }
@@ -783,8 +800,8 @@ class XCloud extends React.Component {
               }}
             />
           ) : (
-            ''
-          )}
+              ''
+            )}
 
           <Popup
             open={this.state.showDeleteItemsPopup}
