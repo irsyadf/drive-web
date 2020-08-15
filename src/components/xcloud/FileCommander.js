@@ -217,7 +217,13 @@ class FileCommander extends React.Component {
           toast.warn(`"${errmsg}"`);
         }
 
-        this.props.getFolderContent(this.props.currentFolderId);
+        let idTeam = this.props.namePath[this.props.namePath.length -1].id_team;
+
+        if (idTeam) {
+          this.props.getFolderContent(this.props.currentFolderId, true, idTeam);
+        } else {
+          this.props.getFolderContent(this.props.currentFolderId);
+        }
       },
     );
 
@@ -411,6 +417,7 @@ class FileCommander extends React.Component {
                   selectableKey={item.id}
                   ref={this.myRef}
                   id={item.id}
+                  id_team={item.id_team}
                   rawItem={item}
                   name={item.name}
                   type={item.type}
@@ -421,7 +428,7 @@ class FileCommander extends React.Component {
                   color={item.color ? item.color : 'blue'}
                   clickHandler={
                     item.isFolder
-                      ? this.props.openFolder.bind(null, item.id)
+                      ? this.props.openFolder.bind(null, item)
                       : this.props.downloadFile.bind(null, item.fileId)
                   }
                   selectHandler={this.props.selectItems}

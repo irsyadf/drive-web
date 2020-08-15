@@ -266,6 +266,7 @@ class FileCommanderItem extends React.Component {
         }
         data-type={this.props.type}
         data-id={this.props.id}
+        data-id-team={this.props.id_team}
         data-cloud-file-id={this.props.rawItem.id}
         data-cloud-folder-id={this.props.rawItem.folder_id}
         data-bridge-file-id={this.props.rawItem.fileId}

@@ -17,11 +17,14 @@ import HeaderButton from './HeaderButton';
 import "./NavigationBar.scss";
 import history from '../../lib/history';
 
-import { getHeaders } from '../../lib/auth'
+import { getHeaders } from '../../lib/auth';
+import { getTeamById } from './../../services/TeamService';
+import { getTeamMembersByUser } from './../../services/TeamMemberService';
 
 interface NavigationBarProps {
     navbarItems: JSX.Element
     showFileButtons?: Boolean
+    showSettingsButton?: Boolean
     setSearchFunction?: any
     uploadFile?: any
     createFolder?: any
@@ -30,32 +33,93 @@ interface NavigationBarProps {
     uploadHandler?: any
 }
 
+interface Team {
+    team: {}
+}
+
 interface NavigationBarState {
     navbarItems: JSX.Element
+    teamBar: any
     menuButton: any
     barLimit: number
     barUsage: number
+    teamName: string
+    team: {
+        name: string
+        component: JSX.Element
+        barLimit: number
+        barUsage: number
+    }
 }
 
 class NavigationBar extends React.Component<NavigationBarProps, NavigationBarState> {
     constructor(props: NavigationBarProps) {
         super(props);
 
-            this.state = {
-                menuButton: null,
-                navbarItems: props.navbarItems,
+        this.state = {
+            menuButton: null,
+            navbarItems: props.navbarItems,
+            barLimit: 1024 * 1024 * 1024 * 2,
+            barUsage: 0,
+            teamName: '',
+            teamBar: null,
+            team: {
+                name: '',
+                component: <div />,
                 barLimit: 1024 * 1024 * 1024 * 2,
-                barUsage: 0,
-            };
+                barUsage: 0
+            }
+        };
     }
 
-    componentDidMount() {
+    componentDidMount(): void {
         let user = null;
         try {
             user = JSON.parse(localStorage.xUser).email;
             if (user == null) {
                 throw new Error();
             }
+
+            getTeamMembersByUser(user).then((teamMember: any) => {
+                getTeamById(teamMember.id_team).then((team: any) => {
+
+                    fetch(`/api/limit/${team.id}`, {
+                        method: 'get',
+                        headers: getHeaders(true, false)
+                    }
+                    ).then(res => {
+                        return res.json();
+                    }).then(res1 => {
+
+                        fetch(`/api/usage/${team.id}`, {
+                            method: 'get',
+                            headers: getHeaders(true, false)
+                        }
+                        ).then(res => {
+                            return res.json();
+                        }).then(res2 => {
+                            this.setState(prevState => ({
+                                team: {
+                                    ...prevState.team,
+                                    component: this.getTeamBar({
+                                        name: team.name,
+                                        totalSpace: res1.maxSpaceBytes,
+                                        usedSpace: res2.total
+                                    })
+                                }
+                            }));
+                        }).catch(err => {
+                            console.log('Error on fetch /api/usage', err);
+                        });
+
+                    }).catch(err => {
+                        console.log('Error on fetch /api/limit', err);
+                    });
+
+                }).catch(err => console.log(err));
+            }).catch(err => {
+                console.log(err);
+            });
         } catch {
             history.push('/login');
             return;
@@ -106,6 +170,23 @@ class NavigationBar extends React.Component<NavigationBarProps, NavigationBarSta
         });
     }
 
+    getTeamBar(team: {
+        name: string
+        usedSpace: number,
+        totalSpace: number
+    }): JSX.Element {
+        return (
+            <div>
+                <Dropdown.Divider />
+                <div className="dropdown-menu-group info">
+                    <p className="name-lastname">{team.name}</p>
+                    <ProgressBar className="mini-progress-bar" now={team.usedSpace} max={team.totalSpace} />
+                    <p className="space-used">Used <strong>{PrettySize(team.usedSpace)}</strong> of <strong>{PrettySize(team.totalSpace)}</strong></p>
+                </div>
+            </div>
+        );
+    }
+
     render() {
         let user: any = null;
         try {
@@ -135,11 +216,13 @@ class NavigationBar extends React.Component<NavigationBarProps, NavigationBarSta
                                 <ProgressBar className="mini-progress-bar" now={this.state.barUsage} max={this.state.barLimit} />
                                 <p className="space-used">Used <strong>{PrettySize(this.state.barUsage)}</strong> of <strong>{PrettySize(this.state.barLimit)}</strong></p>
                             </div>
+                            {this.state.team.component}
                             <Dropdown.Divider />
                             <div className="dropdown-menu-group">
                                 <Dropdown.Item onClick={(e) => { history.push('/storage'); }}>Storage</Dropdown.Item>
                                 <Dropdown.Item onClick={(e) => { history.push('/settings'); }}>Settings</Dropdown.Item>
                                 <Dropdown.Item onClick={(e) => { history.push('/security'); }}>Security</Dropdown.Item>
+                                <Dropdown.Item onClick={(e) => { history.push('/teams'); }}>Teams</Dropdown.Item>
                                 <Dropdown.Item onClick={(e) => { 
                                     function getOperatingSystem() {
                                         let operatingSystem = 'Not known';

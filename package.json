@@ -22,9 +22,11 @@
     "js-file-download": "^0.4.10",
     "prettysize": "^2.0.0",
     "react": "^16.13.0",
+    "react-animations": "^1.0.0",
     "react-bootstrap": "^1.0.0-beta.17",
     "react-device-detect": "^1.11.14",
     "react-dom": "^16.13.0",
+    "react-multi-email": "^0.5.3",
     "react-router-dom": "^5.1.2",
     "react-scripts": "3.4.0",
     "react-selectable": "^2.0.2",
@@ -32,6 +34,7 @@
     "react-toastify": "^5.5.0",
     "reactjs-popup": "^1.5.0",
     "sanitize-filename": "^1.6.3",
+    "styled-components": "^5.1.1",
     "typescript": "~3.7.2"
   },
   "scripts": {
@@ -56,10 +59,11 @@
     ]
   },
   "devDependencies": {
+    "@fortawesome/fontawesome-free": "^5.13.1",
     "node-sass": "^4.13.1",
     "stylelint": "^13.4.0",
     "stylelint-config-standard": "^20.0.0",
     "stylelint-scss": "^3.17.2"
   },
-  "proxy": "http://localhost:3007"
+  "proxy": "http://localhost:8000"
 }

@@ -73,6 +73,14 @@ class XCloud extends React.Component {
 
             this.setState({ isActivated, isInitialized: true });
           }
+
+          if (data.activatedTeam) {
+            this.teamInitialization(data.teamId).then((teamInit) => {
+              this.getFolderContent(this.props.user.root_folder_id);
+            }).catch((err) => {
+              console.log(err);
+            });
+          }
         })
         .catch((error) => {
           console.log('Error getting user activation status: ' + error);
@@ -81,6 +89,32 @@ class XCloud extends React.Component {
         });
     }
   };
+
+  teamInitialization = (idTeam) => {
+    return new Promise((resolve, reject) => {
+      fetch('/api/initialize', {
+        method: 'post',
+        headers: getHeaders(true, true),
+        body: JSON.stringify({
+          email: this.props.user.email,
+          mnemonic: localStorage.getItem('xMnemonic'),
+          idTeam: idTeam
+        }),
+      })
+        .then((response) => {
+          if (response.status === 200) {
+            response.json().then((r_body) => {
+              resolve(r_body);
+            });
+          } else {
+            reject(null);
+          }
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
+  }
 
   userInitialization = () => {
     return new Promise((resolve, reject) => {
@@ -152,6 +186,7 @@ class XCloud extends React.Component {
         body: JSON.stringify({
           parentFolderId: this.state.currentFolderId,
           folderName,
+          teamId:  _.last(this.state.namePath) && _.last(this.state.namePath).hasOwnProperty('id_team') ? _.last(this.state.namePath).id_team : null
         }),
       })
         .then(async (res) => {
@@ -253,6 +288,7 @@ class XCloud extends React.Component {
         body: JSON.stringify({
           parentFolderId,
           folderName,
+          teamId: _.last(this.state.namePath) && _.last(this.state.namePath).hasOwnProperty('id_team') ? _.last(this.state.namePath).id_team : null
         }),
       })
         .then(async (res) => {
@@ -269,13 +305,20 @@ class XCloud extends React.Component {
 
   openFolder = (e) => {
     return new Promise((resolve) => {
-      this.getFolderContent(e);
+      this.getFolderContent(e.id, true, e.id_team || null);
       resolve();
     });
   };
 
-  getFolderContent = (rootId, updateNamePath = true) => {
-    fetch(`/api/storage/folder/${rootId}`, {
+  getFolderContent = (rootId, updateNamePath = true, teamId = null) => {
+    var route = '';
+    if (teamId) {
+      route = `/api/storage/folder/${rootId}/${teamId}`;
+    } else {
+      route = `/api/storage/folder/${rootId}`;
+    }
+
+    fetch(route, {
       method: 'get',
       headers: getHeaders(true, true),
     })
@@ -324,6 +367,7 @@ class XCloud extends React.Component {
                 name: folderName,
                 id: data.id,
                 bucket: data.bucket,
+                id_team: data.id_team
               }),
               isAuthorized: true,
             });
@@ -617,7 +661,12 @@ class XCloud extends React.Component {
             toast.warn(`"${err}"`);
           } else if (parentFolderId === currentFolderId) {
             resolve();
-            this.getFolderContent(currentFolderId);
+
+            this.getFolderContent(
+              currentFolderId,
+              true,
+              _.last(this.state.namePath).id_team || null
+            );
           } else {
             resolve();
           }
@@ -708,7 +757,7 @@ class XCloud extends React.Component {
 
   folderTraverseUp() {
     this.setState(this.popNamePath(), () => {
-      this.getFolderContent(_.last(this.state.namePath).id, false);
+      this.getFolderContent(_.last(this.state.namePath).id, false, _.last(this.state.namePath).id_team);
     });
   }
 

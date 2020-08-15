@@ -32,7 +32,7 @@ const PaymentBridges = [
     }
 ]
 
-class StoragePlans extends React.Component {
+class TeamsPlans extends React.Component {
     constructor(props) {
         super(props);
 
@@ -54,7 +54,7 @@ class StoragePlans extends React.Component {
     }
 
     loadAvailableProducts() {
-        fetch('/api/stripe/products' + (STRIPE_DEBUG ? '?test=true' : ''), {
+        fetch('/api/stripe/teams/products' + (STRIPE_DEBUG ? '?test=true' : ''), {
             headers: getHeaders(true, false)
         }).then(response => response.json()).then(products => {
             this.setState({
@@ -69,7 +69,7 @@ class StoragePlans extends React.Component {
     loadAvailablePlans() {
         const body = { product: this.state.selectedProductToBuy.id }
         if (STRIPE_DEBUG) { body.test = true }
-        fetch('/api/stripe/plans', {
+        fetch('/api/stripe/teams/plans', {
             method: 'post',
             headers: getHeaders(true, false),
             body: JSON.stringify(body)
@@ -89,8 +89,7 @@ class StoragePlans extends React.Component {
         this.setState({ statusMessage: 'Purchasing...' });
 
         const stripe = new stripeGlobal(STRIPE_DEBUG ? process.env.REACT_APP_STRIPE_TEST_PK : process.env.REACT_APP_STRIPE_PK);
-
-        const body = { plan: this.state.selectedPlanToBuy.id, product: this.state.selectedProductToBuy.id };
+        const body = { plan: this.state.selectedPlanToBuy.id, sessionType: 'team', product: this.state.selectedProductToBuy.id };
 
         if (/^pk_test_/.exec(stripe._apiKey)) { body.test = true }
 
@@ -119,7 +118,18 @@ class StoragePlans extends React.Component {
     render() {
         if (this.state.storageStep === 1) {
             return (<div>
-                <p className="title1">Storage Plans</p>
+                <div style={{display: 'flex', justifyContent: 'space-between'}}>
+                    <p className="title1">Team Plans</p>
+                    <span
+                        onMouseOver={() => {
+                            this.props.handleShowDescription(true);
+                        }}
+                        onMouseOut={() => {
+                            this.props.handleShowDescription(false);
+                        }}
+                    ><i className="fas fa-info-circle"></i></span>
+                </div>
+                
 
                 {this.state.productsLoading === true ? <div style={{ textAlign: 'center' }}>
                     <Spinner animation="border" size="sm" />
@@ -132,13 +142,20 @@ class StoragePlans extends React.Component {
                             // Print the list of available products
                             return <InxtContainerOption
                                 key={'plan' + i}
-                                isChecked={this.props.currentPlan === entry.metadata.size_bytes * 1}
+                                isChecked={this.props.currentPlan === entry.metadata.team_size_bytes * 1}
                                 header={entry.metadata.simple_name}
                                 onClick={(e) => {
                                     // Can't select the current product or lesser
                                     this.setState({ selectedProductToBuy: entry, storageStep: 2, plansLoading: true, availablePlans: null });
                                 }}
-                                text={entry.metadata.price_eur === '0.00' ? 'Free' : <span>€{entry.metadata.price_eur}<span style={{ color: '#7e848c', fontWeight: 'normal' }}>/month</span></span>} />
+                                handleShowDescription={this.props.handleShowDescription}
+                                text={entry.metadata.price_eur === '0.00' ? 
+                                    'Free' : 
+                                        <span>
+                                            <span style={{display: 'block'}}>{entry.metadata.team_members !== 'unlimited' ? `Up to ${entry.metadata.team_members} members` : 'Unlimited'}</span>
+                                            <span style={{display: 'block'}}>€{entry.metadata.price_eur}<span style={{ color: '#7e848c', fontWeight: 'normal' }}>/month</span></span>
+                                        </span>
+                                    } />
                         })
                         : ''}
                 </Row>
@@ -235,4 +252,4 @@ class StoragePlans extends React.Component {
     }
 }
 
-export default StoragePlans;
+export default TeamsPlans;
