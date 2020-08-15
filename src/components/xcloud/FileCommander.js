@@ -1,6 +1,6 @@
 // import * as _ from 'lodash'
 import * as React from 'react';
-import { Dropdown, Button, ButtonGroup } from 'react-bootstrap';
+import { Dropdown } from 'react-bootstrap';
 import async from 'async';
 import $ from 'jquery'
 
@@ -10,6 +10,8 @@ import DropdownArrowIcon from '../../assets/Dashboard-Icons/Dropdown arrow.svg';
 import BackToIcon from '../../assets/Dashboard-Icons/back-arrow.svg';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+import { compare } from 'natural-orderby'
 
 const SORT_TYPES = {
   DATE_ADDED: 'Date_Added',
@@ -29,7 +31,7 @@ class FileCommander extends React.Component {
       namePath: this.props.namePath,
       selectedSortType: SORT_TYPES.DATE_ADDED,
       dragDropStyle: '',
-      treeSize: 0,
+      treeSize: 0
     };
   }
 
@@ -63,13 +65,17 @@ class FileCommander extends React.Component {
         };
         break;
       case SORT_TYPES.NAME_ASC:
+        if (this.state.selectedSortType === SORT_TYPES.NAME_ASC) {
+          this.setState({ selectedSortType: SORT_TYPES.NAME_DESC })
+          return sortType(SORT_TYPES.NAME_DESC)
+        }
         sortFunc = function (a, b) {
-          return a.name.localeCompare(b.name);
+          return compare({ order: 'asc' })(a.name, b.name)
         };
         break;
       case SORT_TYPES.NAME_DESC:
         sortFunc = function (a, b) {
-          return b.name.localeCompare(a.name);
+          return compare({ order: 'desc' })(a.name, b.name)
         };
         break;
       case SORT_TYPES.SIZE_ASC:
@@ -85,17 +91,21 @@ class FileCommander extends React.Component {
       default:
         break;
     }
+    this.setState({ selectedSortType: sortType })
     this.props.setSortFunction(sortFunc);
   };
 
   onSelect = (eventKey, event) => {
     // Change active class to option selected only if its not the currently active
     if (!event.target.className.includes('active')) {
-      document.getElementById(this.state.selectedSortType).className = document
-        .getElementById(this.state.selectedSortType)
-        .className.split(' ')[0];
+      if (document
+        .getElementById(this.state.selectedSortType)) {
+        document.getElementById(this.state.selectedSortType).className = document
+          .getElementById(this.state.selectedSortType)
+          .className.split(' ')[0];
+      }
       event.target.className = event.target.className + ' active';
-      this.setState({ selectedSortType: event.target.id });
+      // this.setState({ selectedSortType: event.target.id });
     }
   };
 
@@ -365,7 +375,7 @@ class FileCommander extends React.Component {
                   </Dropdown.Item>
                   <Dropdown.Item
                     id={SORT_TYPES.NAME_ASC}
-                    onClick={() => this.sortItems(SORT_TYPES.NAME_ASC)}
+                    onClick={() => this.sortItems(this.state.selectedSortType === SORT_TYPES.NAME_ASC ? SORT_TYPES.NAME_DESC : SORT_TYPES.NAME_ASC)}
                     onSelect={this.onSelect}
                   >
                     Name
@@ -413,7 +423,7 @@ class FileCommander extends React.Component {
             list.map((item, i) => {
               return (
                 <FileCommanderItem
-                  key={item.id + '' + i}
+                  key={item.id + '-' + i}
                   selectableKey={item.id}
                   ref={this.myRef}
                   id={item.id}
@@ -430,6 +440,7 @@ class FileCommander extends React.Component {
                     item.isFolder
                       ? this.props.openFolder.bind(null, item)
                       : this.props.downloadFile.bind(null, item.fileId)
+                  
                   }
                   selectHandler={this.props.selectItems}
                   isLoading={!!item.isLoading}
